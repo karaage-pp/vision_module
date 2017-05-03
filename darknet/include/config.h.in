@@ -1,0 +1,10 @@
+
+#define WORKSPACE "@WORKSPACE@"
+
+#define OBJECT_IMAGE WORKSPACE "/" "@OBJECT_IMAGE@"
+#define COCO_DATA   WORKSPACE "/" "@COCO_DATA@" 
+#define YOLO_CFG    WORKSPACE "/" "@YOLO_CFG@"
+#define WEIGHT      WORKSPACE "/" "@WEIGHT@" 
+#define THRESH      @THRESH@ 
+
+#define RGBD_IMAGE_SIZE @RGBD_IMAGE_SIZE@

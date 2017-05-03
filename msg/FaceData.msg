@@ -1,0 +1,9 @@
+uint32 width
+uint32 height
+Vector camera
+Vector szwht
+NBest[] generic
+NBest[] specific
+uint8 age
+string gender
+uint8[] bgr

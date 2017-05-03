@@ -1,0 +1,9 @@
+
+# topic name
+string IMAGE_CAPTURE_INFO=image_capture_info
+string PLANE_DETECTION_INFO=plane_detection_info
+string OBJECT_DETECTION_INFO=object_detection_info
+string OBJECT_RECOGNITION_INFO=object_recognition_info
+string FACE_DETECTION_INFO=face_detection_info
+string FACE_RECOGNITION_INFO=face_recognition_info
+

@@ -1,0 +1,20 @@
+<library path="src">
+    <class name="Visualizer" type="rqt_visualizer.visualizer.VisionGUIPlugin" base_class_type="rqt_gui_cpp::Plugin">
+        <description>
+            Visualizer
+        </description>
+        <qtgui>
+            <!-- optional grouping...
+            <group>
+                <label>Group</label>
+            </group>
+            <group>
+                <label>Subgroup</label>
+            </group>
+            -->
+            <label>rqt_visualizer</label>
+            <icon type="theme">system-help</icon>
+            <statustip>Great user interface to provide real value.</statustip>
+        </qtgui>
+    </class>
+</library>

@@ -1,0 +1,16 @@
+
+#define WORKSPACE   "@WORKSPACE@"
+#define PYWORKSPACE "@PYWORKSPACE@"
+#define DATA_DIR    "@DATA_DIR@"
+#define PICT_DIR    "@PICT_DIR@"
+#define MODEL_DIR   "@FACEMODEL_DIR@"
+#define LEARNED_DIR "@LEARNED_DIR@"
+#define TEMP_DIR    "@TEMP_DIR@"
+
+#define IMAGE_PATH  WORKSPACE "/" "image/faceRecog.jpg"
+
+#define PY_INTERFACE    "@PY_INTERFACE@"
+#define FEATURE_FILE    WORKSPACE "/" "@FEATURE_FILE@"
+#define FACE_MODEL      WORKSPACE "/" "@FACE_MODEL@"
+#define AGE_LIST        WORKSPACE "/" "@AGE_LIST@"
+#define GENDER_LIST     WORKSPACE "/" "@GENDER_LIST@"

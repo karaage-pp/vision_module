@@ -1,0 +1,11 @@
+uint32 width
+uint32 height
+Vector camera
+Vector normal
+int32 planeNum
+Vector szwht
+string color
+NBest[] generic
+NBest[] specific
+uint8[] bgr
+float32[] features
