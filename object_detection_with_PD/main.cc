@@ -84,7 +84,7 @@ int main(int argc, char **argv){
     ros::NodeHandle n;
     ros::ServiceServer service_start = n.advertiseService("object_detection_with_PD/start", &CProcess<vision_module::ObjectInfoConstPtr,
              vision_module::ObjectInfo>::start_call, &proc);
-    ros::ServiceServer service_stop = n.advertiseService("object_detection_with_PD/stop", &CProcess<vision_module::ObjectInfoConstPtr, 
+    ros::ServiceServer service_stop = n.advertiseService("object_detection_with_PD/stop", &CProcess<vision_module::ObjectInfoConstPtr,
              vision_module::ObjectInfo>::stop_call, &proc);
     //追加トゥアン
     ros::spin();
@@ -133,10 +133,10 @@ float CProcess<SUB, PUB>::dotProduct(vision_module::Vector vec1,
 template <class SUB, class PUB>
 void CProcess<SUB, PUB>::callback(const SUB &msg){
     if (m_server_command){//追加トゥアン
-
+    int image_size = msg->width * msg->height;
     CObjectDetection od(msg->width, msg->height);
-    CvPoint3D32f points[RGBD_IMAGE_SIZE];
-    int label[RGBD_IMAGE_SIZE];
+    CvPoint3D32f points[image_size];
+    int label[image_size];
     std::vector<OD::ObjectInfo> objectInfo;
     vision_module::ObjectInfo res;
     cv::Mat colorMat = cv::Mat::zeros(msg->height, msg->width, CV_8UC3);
@@ -148,11 +148,11 @@ void CProcess<SUB, PUB>::callback(const SUB &msg){
     try{
 
     //メッセージをOpenCVの形に変換
-    if(convertToCvPC(msg, points, RGBD_IMAGE_SIZE));
+    if(convertToCvPC(msg, points, image_size));
     else throw "convertTo";
     if(convertToMat(msg, colorMat));
     else throw "convertToMat";
-    if(setLabel(msg, label, RGBD_IMAGE_SIZE));
+    if(setLabel(msg, label, image_size));
     else throw "setLabel";
 
     //遠い点を取り除く
@@ -270,6 +270,16 @@ void CProcess<SUB, PUB>::callback(const SUB &msg){
             continue;
         }
 
+        //変更宮澤 切り出し画像をの幅を広げる jsai学習用に緊急で変更 常に使うことがないように
+        /*if (obj.bottom.y < 410)
+          obj.bottom.y += 5;
+        if (obj.top.y > 10 )
+          obj.top.y -= 5;
+        if (obj.right.x < 500)
+        obj.right.x += 5;
+        if (obj.left.x > 10)
+          obj.left.x -= 5;*/
+
         //物体画像を切り出す
         cv::Mat roi = cv::Mat::zeros(obj.bottom.y - obj.top.y,
                                     obj.right.x - obj.left.x, CV_8UC3);
@@ -320,7 +330,7 @@ SIZE %.2f, %.2f, %.2f",
     if(m_display){
         cv::imshow(CV_RAW_WINDOW, od.getObjectMat());
         cv::imshow(CV_OBJECT_WINDOW, objectMat);
-        cv::waitKey(10);
+        cv::waitKey(1);
     }
     }catch(char *e){
     }
