@@ -16,7 +16,7 @@ scale_size = 256
 class Alexnet:
     def __init__(self):
         gpuConfig = tf.ConfigProto(
-            gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction = 0.2))
+            gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction = 0.5))
         self.x = tf.placeholder(tf.float32, [1, crop_size, crop_size, 3])
         self.pred, self.features = Model.alexnet_fe(self.x, 1.0, n_classes)
         self.prob = tf.nn.softmax(self.pred)
@@ -46,10 +46,10 @@ class Alexnet:
 
     def reshape(self, img):
         mean = np.array([104., 117., 124.])
-    
+
         h, w, c = img.shape
         assert c==3
-    
+
         reshaped = np.ndarray([1, crop_size, crop_size, 3])
         resized = cv2.resize(img, (scale_size, scale_size))
         resized = resized.astype(np.float32)
@@ -57,7 +57,7 @@ class Alexnet:
         shift = int((scale_size - crop_size) / 2)
         resized = resized[shift:shift + crop_size, shift:shift + crop_size, :]
         reshaped[0] = resized
-    
+
         return reshaped
 
 
@@ -65,26 +65,26 @@ def main(argv):
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "input_file", 
+        "input_file",
         help = "Input image or image list."
     )
     parser.add_argument(
-        "--pretrained_model", 
-        default = "../model/bvlc_reference_caffenet.tf", 
+        "--pretrained_model",
+        default = "../model/bvlc_reference_caffenet.tf",
         help = "Pretrained model."
     )
     parser.add_argument(
-        "--output_file", 
-        default = "features.txt", 
+        "--output_file",
+        default = "features.txt",
         help = "Output file name."
     )
     parser.add_argument(
-        "--extract", 
-        action = "store_true", 
+        "--extract",
+        action = "store_true",
         help = "Extract features from dataset"
     )
     args = parser.parse_args()
-    args.input_file = os.path.expanduser(args.input_file)   
+    args.input_file = os.path.expanduser(args.input_file)
 
     net = Alexnet()
     net.setup(args.pretrained_model)
@@ -123,5 +123,5 @@ def main(argv):
 
 if __name__ == '__main__':
     import argparse
-    
+
     main(sys.argv)

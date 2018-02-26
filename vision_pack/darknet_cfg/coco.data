@@ -2,7 +2,7 @@ classes= 80
 train  = /home/pjreddie/data/coco/trainvalno5k.txt
 valid  = coco_testdev
 #valid = data/coco_val_5k.list
-#names = /home/robocup/Documents/vision_pack/darknet_cfg/coco.names
-names = /home/miyazawa/catkin_ws/src/vision_module/vision_pack/darknet_cfg/coco.names
+names = /home/robocup/Documents/vision_pack/darknet_cfg/coco.names
 backup = /home/pjreddie/backup/
 eval=coco
+
