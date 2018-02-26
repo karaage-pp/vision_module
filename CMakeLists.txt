@@ -7,12 +7,8 @@ set(MODEL_DIR "model")
 set(FACEMODEL_DIR "facemodel")
 set(FACEDATA_DIR "facedata")
 
-#画像サイズ変えたいときはここを変える
-set(RGBD_IMAGE_WIDTH "640")
-set(RGBD_IMAGE_HEIGHT "480")
-##
+#画像サイズはmessageから自動設定
 
-math(EXPR RGBD_IMAGE_SIZE "${RGBD_IMAGE_WIDTH} * ${RGBD_IMAGE_HEIGHT}")
 set(WORKSPACE "${PROJECT_SOURCE_DIR}/vision_pack")
 set(PYWORKSPACE "${WORKSPACE}/${PYFILE_DIR}")
 
@@ -27,7 +23,9 @@ foreach(var ${PYFILE_DIR} ${MODEL_DIR} ${FACEMODEL_DIR} ${FACEDATA_DIR})
     endif()
 endforeach()
 
-find_package(OpenCV REQUIRED)
+
+
+find_package(OpenCV 2 REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
     roscpp
     rospy
@@ -38,6 +36,7 @@ find_package(catkin REQUIRED COMPONENTS
     cv_bridge
     message_generation
 )
+
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
@@ -58,6 +57,8 @@ add_message_files(
     FaceData.msg
     FaceInfo.msg
     )
+
+
 
 generate_messages(
     DEPENDENCIES
@@ -97,3 +98,12 @@ catkin_package(
     CATKIN_DEPENDS dynamic_reconfigure roscpp rospy std_msgs cv_bridge message_runtime
 #  DEPENDS system_lib
 )
+
+
+
+
+
+
+
+
+
