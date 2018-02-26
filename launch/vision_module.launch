@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<launch>
+    <group ns="vision_module">
+        <node pkg="vision_module"
+            name="image_capture" type="image_capture">
+        <param name="image_capture_rate" value="30.0"/>
+        <!-- <remap from="/camera/depth_registered/points" to="/ext/camera/depth_registered/points"/> -->
+      </node>
+        <node pkg="vision_module"
+            name="plane_detection" type="plane_detection"/>
+        <node pkg="vision_module"
+            name="object_detection" type="object_detection_with_PD"/>
+        <node pkg="vision_module"
+            name="object_recognition" type="object_recognition"/>
+        <node pkg="vision_module"
+            name="face_detection" type="face_detection"/>
+        <node pkg="vision_module"
+            name="face_recognition" type="face_recognition"/>
+        <node pkg="vision_module"
+            name="darknet" type="darknet"/>
+    </group>
+</launch>

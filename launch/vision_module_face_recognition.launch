@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+    <group ns="vision_module">
+        <node pkg="vision_module"
+            name="face_recognition" type="face_recognition" output="screen"/>
+    </group>
+</launch>
