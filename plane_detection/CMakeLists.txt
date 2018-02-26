@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8.3)
 set(PLANE_IMAGE_PATH "${IMAGE_OUTPUT_DIR}/plane.jpg")
 set(FILTERED_IMAGE "${IMAGE_OUTPUT_DIR}/filtered.jpg")
 
+
 configure_file(
     "${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/plane_detection/config.h.in" 
     "${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/plane_detection/config.h"
@@ -20,4 +21,6 @@ target_link_libraries(plane_detection
     ${catkin_LIBRARIES}
     ${OpenCV_LIBS}
 )
+
+
 

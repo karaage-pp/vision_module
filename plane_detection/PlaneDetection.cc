@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #include <vision_module/plane_detection/PlaneDetection.h>
 #include <vision_module/common/VectorCalculus.h>
@@ -10,13 +11,13 @@
 #define MIN_SEGMENT_SIZE 8000
 #define IT	200
 #define MAX_DIST 8.0
-#define MIN_DIST 0.5
+#define MIN_DIST 0.3
 #define DEFAULT_INDX_NUM -1
-#define MAX_DIST_GAP 0.05
+#define MAX_DIST_GAP 0.1
 #define SHOW_ALL_PLANAR_POINT
 #define FILTERED -2
 
-#define D	10
+#define D	5
 
 #define SEARCH_RECT_W 20
 #define SEARCH_RECT_H 20
@@ -39,7 +40,7 @@ float myAbs(const float &num){
 
 CPlaneDetection2::CPlaneDetection2(){
 	m_sIndx = NULL;
-    paramConfig(ERROR_RANGE, MIN_SEGMENT_SIZE, IT, MAX_DIST, MIN_DIST, 
+    paramConfig(ERROR_RANGE, MIN_SEGMENT_SIZE, IT, MAX_DIST, MIN_DIST,
                 MAX_DIST_GAP);
 }
 
@@ -48,6 +49,7 @@ CPlaneDetection2::~CPlaneDetection2(){
 }
 
 void CPlaneDetection2::init(int width, int height, float maxDist){
+	//printf("%d                %d\n",width,height);
 	m_width = width;
 	m_height = height;
 	m_maxDist = maxDist;
@@ -62,8 +64,8 @@ void CPlaneDetection2::init(int width, int height, float maxDist){
 	numset(m_sIndx, DEFAULT_INDX_NUM, m_reso);
 }
 
-void CPlaneDetection2::paramConfig(float errorRange, int minSegmentSize, 
-                                    int searchIteration, float maxDist, 
+void CPlaneDetection2::paramConfig(float errorRange, int minSegmentSize,
+                                    int searchIteration, float maxDist,
                                     float minDist, float maxDistGap){
 
     m_errorRange = errorRange;
@@ -84,19 +86,31 @@ bool CPlaneDetection2::isSearched(const int &num){
 	else return false;
 }
 
-bool CPlaneDetection2::isPlaneMember(const CvPoint3D32f &p, const CvPoint3D32f &pOnPlane, 
+bool CPlaneDetection2::isPlaneMember(const CvPoint3D32f &p, const CvPoint3D32f &pOnPlane,
 									const CvPoint3D32f &normal){
 	if(getDistToPlane(p, pOnPlane, normal) < m_errorRange)return true;
 	else return false;
 }
 
-bool CPlaneDetection2::firstSearch(const int &x, const int &y, CvPoint3D32f *pXYZ, 
+bool CPlaneDetection2::firstSearch(const int &x, const int &y, CvPoint3D32f *pXYZ,
 								   CvPoint3D32f &pOnPlane, CvPoint3D32f &normal){
-
-	if(isSearched(x, y))return false;
-	if(isSearched(x + m_tWidth, y))return false;
-	if(isSearched(x, y + m_tHeight))return false;
-	if(isSearched(x + m_tWidth, y + m_tHeight))return false;
+	printf("ISSEARCH  DEF: %d   VAL: %d\n",DEFAULT_INDX_NUM,m_sIndx[y*m_width + x]);
+	if(isSearched(x, y)){
+		printf("F1\n");
+		return false;
+	}
+	if(isSearched(x + m_tWidth, y)){
+		printf("F2\n");
+		return false;
+	}
+	if(isSearched(x, y + m_tHeight)){
+		printf("F3\n");
+		return false;
+	}
+	if(isSearched(x + m_tWidth, y + m_tHeight)){
+		printf("F4\n");
+		return false;
+	}
 	CvPoint3D32f vertex[2], vec[2];
 
 	pOnPlane = pXYZ[y * m_width + x];
@@ -114,17 +128,17 @@ bool CPlaneDetection2::firstSearch(const int &x, const int &y, CvPoint3D32f *pXY
 	return isPlaneMember(pXYZ[y * m_width + x + m_tWidth], pOnPlane, normal);
 }
 
-bool CPlaneDetection2::secondSearch(const int &x, const int &y, 
-									CvPoint3D32f *pXYZ, CvPoint3D32f &pOnPlane, 
+bool CPlaneDetection2::secondSearch(const int &x, const int &y,
+									CvPoint3D32f *pXYZ, CvPoint3D32f &pOnPlane,
 									CvPoint3D32f &normal){
 
-	//•Ï”‚ÌéŒ¾A‰Šú‰»
+	//å¤‰æ•°ã®å®£è¨€ã€åˆæœŸåŒ–
 	int *pList = new int[m_reso];
 	numset(pList, -1, 512 * 424);
 	int pNum = 0;
 	int minPointNum = -1;
 
-	//’Tõ—Ìˆæ‚Ì‹K’èAÅ¬“_”‚Ì‹K’è
+	//æ¢ç´¢é ˜åŸŸã®è¦å®šã€æœ€å°ç‚¹æ•°ã®è¦å®š
 	Vertex outerUL, outerLR, innerUL, innerLR;
 	if((x - SEARCH_RECT_W) >= 0){
 		outerUL.x = x - SEARCH_RECT_W;
@@ -152,7 +166,7 @@ bool CPlaneDetection2::secondSearch(const int &x, const int &y,
 					- ((innerLR.x - innerUL.x) * (innerLR.y - innerUL.y)))
 						/ MIN_POINT_NUM;
 
-	//’Tõ
+	//æ¢ç´¢
 	int sybym_width;
 	for(int sy = outerUL.y; sy < innerUL.y; sy++){
 		sybym_width = sy * m_width;
@@ -192,15 +206,15 @@ bool CPlaneDetection2::secondSearch(const int &x, const int &y,
 		}
 	}
 
-	//“_ŒQ‚Ì‘å‚«‚³‚É‰‚¶‚Äˆ—
+	//ç‚¹ç¾¤ã®å¤§ãã•ã«å¿œã˜ã¦å‡¦ç†
 	if(pNum >= minPointNum){
-		//•½–Ê‚Ì–@üAŠî€“_‚ğÄŒvZ
+		//å¹³é¢ã®æ³•ç·šã€åŸºæº–ç‚¹ã‚’å†è¨ˆç®—
 		if(calcNormal(pXYZ, pOnPlane, normal, pList, pNum));
 		else{
 			delete[] pList;
 			return false;
 		}
-		//‚±‚Ì•”•ª‚Í¸“x‚ğ‚‚ß‚é‚½‚ß‚É•K—vA¸“x‚ğ•K—v‚Æ‚µ‚È‚¢‚È‚çƒRƒƒ“ƒgƒAƒEƒg
+		//ã“ã®éƒ¨åˆ†ã¯ç²¾åº¦ã‚’é«˜ã‚ã‚‹ãŸã‚ã«å¿…è¦ã€ç²¾åº¦ã‚’å¿…è¦ã¨ã—ãªã„ãªã‚‰ã‚³ãƒ¡ãƒ³ãƒˆã‚¢ã‚¦ãƒˆ
 		numset(pList, -1, 512 * 424);
 		pNum = 0;
 		for(int it = 0; it < m_reso; it++){
@@ -223,10 +237,10 @@ bool CPlaneDetection2::secondSearch(const int &x, const int &y,
 	return true;
 }
 
-bool CPlaneDetection2::thirdSearch(CvPoint3D32f *pXYZ, CvPoint3D32f &pOnPlane, 
+bool CPlaneDetection2::thirdSearch(CvPoint3D32f *pXYZ, CvPoint3D32f &pOnPlane,
 								   CvPoint3D32f &normal, planeInfo &result){
 
-	//•Ï”‚ÌéŒ¾A‰Šú‰»
+	//å¤‰æ•°ã®å®£è¨€ã€åˆæœŸåŒ–
 	int firstSegmentNum = m_numPlane + 2, lastSegmentNum = -1;
 	bool isPlane = false;
 	int *indxBuf = new int[m_reso];
@@ -234,13 +248,13 @@ bool CPlaneDetection2::thirdSearch(CvPoint3D32f *pXYZ, CvPoint3D32f &pOnPlane,
     result.upperMax.y = -100.0;
     result.lowerMax.y = 100.0;
     float minX = 100.0, maxX = -100.0;
-	
+
     numset(indxBuf, DEFAULT_INDX_NUM, m_reso);
 
 	for(int it = 0; it < m_reso; it++)
-		if(m_sIndx[it] != FILTERED 
+		if(m_sIndx[it] != FILTERED
 			&& isPlaneMember(pXYZ[it], pOnPlane, normal))indxBuf[it] = 1;
-	
+
 	segmentRegionGrow(m_width, m_height, indxBuf, 1, firstSegmentNum, lastSegmentNum);
 	for(int it = firstSegmentNum; it <= lastSegmentNum; it++){
 		if(getSegmentArea(m_reso, it, indxBuf) > m_minSegmentSize){
@@ -285,34 +299,34 @@ bool CPlaneDetection2::thirdSearch(CvPoint3D32f *pXYZ, CvPoint3D32f &pOnPlane,
 UL: %.2f, %.2f, %.2f\n\
 UR: %.2f, %.2f, %.2f\n\
 LL: %.2f, %.2f, %.2f\n\
-LR: %.2f, %.2f, %.2f\n", 
-result.upperMin.x, 
-result.upperMin.y, 
-result.upperMin.z, 
-result.upperMax.x, 
-result.upperMax.y, 
-result.upperMax.z, 
-result.lowerMin.x, 
-result.lowerMin.y, 
-result.lowerMin.z, 
-result.lowerMax.x, 
-result.lowerMax.y, 
+LR: %.2f, %.2f, %.2f\n",
+result.upperMin.x,
+result.upperMin.y,
+result.upperMin.z,
+result.upperMax.x,
+result.upperMax.y,
+result.upperMax.z,
+result.lowerMin.x,
+result.lowerMin.y,
+result.lowerMin.z,
+result.lowerMax.x,
+result.lowerMax.y,
 result.lowerMax.z);*/
         m_numPlane++;
 		return true;
 	}else return false;
 }
 
-bool CPlaneDetection2::calcNormal(CvPoint3D32f *pXYZ, CvPoint3D32f &pOnPlane, 
-								  CvPoint3D32f &normal, 
+bool CPlaneDetection2::calcNormal(CvPoint3D32f *pXYZ, CvPoint3D32f &pOnPlane,
+								  CvPoint3D32f &normal,
 								  int *pList, const int &pNum){
-	
-	//•Ï”‚ÌéŒ¾A‰Šú‰»
-	float I[9] = {0.0, 0.0, 0.0, 0.0, 0.0, 
+
+	//å¤‰æ•°ã®å®£è¨€ã€åˆæœŸåŒ–
+	float I[9] = {0.0, 0.0, 0.0, 0.0, 0.0,
 				  0.0, 0.0, 0.0};
 	float p[3];
 
-	//Še•Ï”‚Ì’l‚ğŒvZ
+	//å„å¤‰æ•°ã®å€¤ã‚’è¨ˆç®—
 	for(int it = 0; it < pNum; it++){
 		p[0] = pXYZ[pList[it]].x;
 		p[1] = pXYZ[pList[it]].y;
@@ -327,12 +341,12 @@ bool CPlaneDetection2::calcNormal(CvPoint3D32f *pXYZ, CvPoint3D32f &pOnPlane,
 		I[6] += p[1] * p[2];
 		I[7] += p[2];
 	}
-	//•½–Êã‚Ì“_À•W‚Ì•½‹Ï‚ğŒvZA‚±‚ê‚ğŠî€“_‚Æ‚µ‚Äˆµ‚¤
+	//å¹³é¢ä¸Šã®ç‚¹åº§æ¨™ã®å¹³å‡ã‚’è¨ˆç®—ã€ã“ã‚Œã‚’åŸºæº–ç‚¹ã¨ã—ã¦æ‰±ã†
 	pOnPlane.x = I[2] / (float)pNum;
 	pOnPlane.y = I[4] / (float)pNum;
 	pOnPlane.z = I[7] / (float)pNum;
 
-	//Å¬“ñæ–@‚Å•½–Ê‚Ì–@üƒxƒNƒgƒ‹‚ğŒvZ
+	//æœ€å°äºŒä¹—æ³•ã§å¹³é¢ã®æ³•ç·šãƒ™ã‚¯ãƒˆãƒ«ã‚’è¨ˆç®—
 	I[8] = (I[0] * (I[3] * (float)pNum - I[4] * I[4]))
 			+ (I[1] * (I[4] * I[2] * 2.0 - I[1] * pNum)
 			- (I[3] * I[2] * I[2]));
@@ -344,8 +358,8 @@ bool CPlaneDetection2::calcNormal(CvPoint3D32f *pXYZ, CvPoint3D32f &pOnPlane,
 	normal.y = (I[0] * (I[6] * (float)pNum - I[4] * I[7])
 				+ I[5] * (I[4] * I[2] - I[1] * (float)pNum)
 				+ I[2] * (I[7] * I[1] - I[6] * I[2])) / I[8];
-	
-	normal.z = -1.0;//•½–Ê‚ÌƒxƒNƒgƒ‹‚ªƒJƒƒ‰‚Ì•û‚ğŒü‚­‚æ‚¤‚É‚µ‚Ä‚¢‚é
+
+	normal.z = -1.0;//å¹³é¢ã®ãƒ™ã‚¯ãƒˆãƒ«ãŒã‚«ãƒ¡ãƒ©ã®æ–¹ã‚’å‘ãã‚ˆã†ã«ã—ã¦ã„ã‚‹
 
 	return normalize(normal);
 }
@@ -360,7 +374,7 @@ bool CPlaneDetection2::setColor(const int &num, int n){
 
 CPlaneDetection2::color CPlaneDetection2::getColor(int n){
 	color res;
-	
+
 	if(n == 0){
 		switch(m_numPlane % 3){
 		case 0:res.b = 1;res.g = 0;res.r = 0;break;
@@ -443,49 +457,56 @@ void CPlaneDetection2::distLaplacianFilter(CvPoint3D32f *pXYZ, float distThrd){
 int CPlaneDetection2::detectPlane(CvPoint3D32f *pXYZ, float maxDist){
 	if(m_sIndx);
 	else{
-		printf("PLANE DETECTION : ƒNƒ‰ƒX‚ğ‰Šú‰»‚µ‚Ä‚­‚¾‚³‚¢\n");
+		printf("PLANE DETECTION : ã‚¯ãƒ©ã‚¹ã‚’åˆæœŸåŒ–ã—ã¦ãã ã•ã„\n");
 		return -1;
 	}
 
-	//Še•Ï”‚ÌéŒ¾A‰Šú‰»
+	//å„å¤‰æ•°ã®å®£è¨€ã€åˆæœŸåŒ–
 	int x = 252, y = 212;
 	int rdx = m_width - m_tWidth, rdy = m_height - m_tHeight;
 	CvPoint3D32f pOnPlane, normal;
     planeInfo info;
 	m_planeMat = cv::Mat::zeros(m_height, m_width, CV_8UC3);;
 	m_filterMat = cv::Mat::zeros(m_height, m_width, CV_8UC3);
-	numset(m_sIndx, DEFAULT_INDX_NUM, m_reso);
 	filter(pXYZ, maxDist);
+	m_planeInfo.clear();
 	distLaplacianFilter(pXYZ, m_maxDistGap);
 	m_numPlane = 0;
-	m_planeInfo.clear();
 
-	//•½–ÊŒŸo
-	for(int it = 0; it < m_searchIteration; it++){
-		x = rand() % rdx;
-		y = rand() % rdy;
-		if(firstSearch(x, y, pXYZ, pOnPlane, normal));
-		else continue;
-		if(secondSearch(x, y, pXYZ, pOnPlane, normal));
-		else continue;
-		if(thirdSearch(pXYZ, pOnPlane, normal, info)){
-			info.normal = normal;
-			info.center = pOnPlane;
-			m_planeInfo.push_back(info);
-		}else continue;
+	for(int x=rand()%10;x<rdx;x+=100){
+		for(int y =rand()%10;y<rdy;y+=100){
+			//printf("x: %d  y: %d\n",x,y);
+			if(firstSearch(x, y, pXYZ, pOnPlane, normal));
+			else{
+				continue;
+			}
+			if(secondSearch(x, y, pXYZ, pOnPlane, normal));
+			else{
+				continue;
+			}
+			if(thirdSearch(pXYZ, pOnPlane, normal, info)){
+				info.normal = normal;
+				info.center = pOnPlane;
+				m_planeInfo.push_back(info);
+			}else{
+					continue;
+				}
+		}
 	}
+
+	//printf("@@@@@@@@@@@ END @@@@@@@@@@\n");
 	return 0;
 }
 
-int CPlaneDetection2::isObjectOnAPlane(CvPoint3D32f bottom, 
-									   CvPoint3D32f top, 
+int CPlaneDetection2::isObjectOnAPlane(CvPoint3D32f bottom,
+									   CvPoint3D32f top,
 									   CvPoint3D32f &normal){
 	planeInfo pInfo;
 	for(int i = 0; i < m_numPlane; i++){
 		pInfo = m_planeInfo[i];
 		if((myAbs(getDotProduct(getVector(pInfo.center, bottom), pInfo.normal)) < 0.05)
 			&& (getDotProduct(getVector(bottom, top), pInfo.normal) > MIN_HEIGHT)){
-			
+
 			normal = m_planeInfo[i].normal;
 			return i;
 		}
@@ -495,15 +516,15 @@ int CPlaneDetection2::isObjectOnAPlane(CvPoint3D32f bottom,
 
 cv::Mat CPlaneDetection2::getTriangleView(int x = 252, int y = 212){
 	m_planeMat = cv::Mat::zeros(424, 512, CV_8UC3);
-	
-	cv::line(m_planeMat, 
-		cv::Point(x, y), 
+
+	cv::line(m_planeMat,
+		cv::Point(x, y),
 		cv::Point(x + m_tWidth, y + m_tHeight), cv::Scalar(0, 200, 0), 1, 4);
-	cv::line(m_planeMat, 
-		cv::Point(x, y), 
+	cv::line(m_planeMat,
+		cv::Point(x, y),
 		cv::Point(x, y + m_tHeight), cv::Scalar(0, 200, 0), 1, 4);
-	cv::line(m_planeMat, 
-		cv::Point(x, y + m_tHeight), 
+	cv::line(m_planeMat,
+		cv::Point(x, y + m_tHeight),
 		cv::Point(x + m_tWidth, y + m_tHeight), cv::Scalar(0, 200, 0), 1, 4);
 
 	return m_planeMat;
@@ -516,14 +537,14 @@ cv::Mat CPlaneDetection2::getRandomTriangleView(){
 	y = rand() % rdy;
 
 	m_planeMat = cv::Mat::zeros(m_height, m_width, CV_8UC3);
-	cv::line(m_planeMat, 
-		cv::Point(x, y), 
+	cv::line(m_planeMat,
+		cv::Point(x, y),
 		cv::Point(x + m_tWidth, y + m_tHeight), cv::Scalar(255, 255, 255), 1, 4);
-	cv::line(m_planeMat, 
-		cv::Point(x, y), 
+	cv::line(m_planeMat,
+		cv::Point(x, y),
 		cv::Point(x, y + m_tHeight), cv::Scalar(255, 255, 255), 1, 4);
-	cv::line(m_planeMat, 
-		cv::Point(x, y + m_tHeight), 
+	cv::line(m_planeMat,
+		cv::Point(x, y + m_tHeight),
 		cv::Point(x + m_tWidth, y + m_tHeight), cv::Scalar(255, 255, 255), 1, 4);
 
 	return m_planeMat;

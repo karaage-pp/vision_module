@@ -18,6 +18,7 @@
 #define SUB_TOPIC vision_module::VisionOrder::IMAGE_CAPTURE_INFO.c_str()
 #define PUB_TOPIC vision_module::VisionOrder::PLANE_DETECTION_INFO.c_str()
 
+
 template <class SUB, class PUB>
 class CProcess : public CVisionProcess<SUB, PUB> {
 public:
@@ -58,12 +59,15 @@ int main(int argc, char **argv){
     ros::init(argc, argv, NODE_NAME);
     CProcess<vision_module::ImageInfoConstPtr,
              vision_module::ObjectInfo> proc(NODE_NAME, SUB_TOPIC, PUB_TOPIC);
+
      //追加トゥアン
     ros::NodeHandle n;
     ros::ServiceServer service_start = n.advertiseService("plane_detection/start", &CProcess<vision_module::ImageInfoConstPtr,
              vision_module::ObjectInfo>::start_call, &proc);
-    ros::ServiceServer service_stop = n.advertiseService("plane_detection/stop", &CProcess<vision_module::ImageInfoConstPtr, 
+    ros::ServiceServer service_stop = n.advertiseService("plane_detection/stop", &CProcess<vision_module::ImageInfoConstPtr,
              vision_module::ObjectInfo>::stop_call, &proc);
+    //RosParamGet
+
     //追加トゥアン
     ros::spin();
     return 0;
@@ -101,35 +105,38 @@ bool CProcess<SUB, PUB>::stop_call(std_srvs::Trigger::Request &req,
 template <class SUB, class PUB>
 void CProcess<SUB, PUB>::callback(const SUB &msg){
     if (m_server_command){//追加トゥアン
+    int image_size = msg->width * msg->height;
     cv::Mat color = cv::Mat::zeros(
-                    RGBD_IMAGE_WIDTH, RGBD_IMAGE_HEIGHT, CV_8UC3);
+                    msg->width, msg->height, CV_8UC3);
     cv::Mat plane = cv::Mat::zeros(
-                    RGBD_IMAGE_WIDTH, RGBD_IMAGE_HEIGHT, CV_8UC3);
-    CvPoint3D32f points[RGBD_IMAGE_SIZE];
+                    msg->width, msg->height, CV_8UC3);
+    CvPoint3D32f points[image_size];
     CPlaneDetection2 pd;
     std::vector<CPlaneDetection2::planeInfo> pi;
 
     //平面検出パラメータの初期化
-    pd.init(RGBD_IMAGE_WIDTH, RGBD_IMAGE_HEIGHT, m_maxDist);
+    pd.init(msg->width, msg->height, m_maxDist);
     pd.paramConfig(m_errorRange, m_minSegmentSize, m_searchIteration,
                     m_maxDist, m_minDist, m_maxGap);
 
     try{
         //データをOpenCV形式に変更
-        if(convertToMat(msg, color));
-        else throw "convertToMat";
-        if(convertToCvPC(msg, points, RGBD_IMAGE_SIZE));
+        //if(convertToMat(msg, color));
+        //else throw "convertToMat";
+        //ROS_INFO("START CONVERT\n");
+        if(convertToCvPC(msg, points, image_size));
         else throw "convertToCvPC";
 
+        //ROS_INFO("START DETECTION\n");
         //平面検出
         pd.detectPlane(points, m_maxDist);
-
+        //ROS_INFO("FINISHED DETECTION\n");
         vision_module::ObjectInfo res;
         //タイムスタンプを受け継ぐ
         res.header = msg->header;
         copyTo(msg, res);
         //検出された平面のラベルを取得
-        setLabel(pd.getSegmentIndx(), res, RGBD_IMAGE_SIZE);
+        setLabel(pd.getSegmentIndx(), res, image_size);
         res.planes.clear();
         pi.clear();
         pi = pd.getPlaneInfo();
@@ -158,21 +165,9 @@ void CProcess<SUB, PUB>::callback(const SUB &msg){
             buf.lowerRight.y = it->upperMax.y;
             buf.lowerRight.z = it->upperMax.z;
             res.planes.push_back(buf);
-/*
-            ROS_INFO("\
-[%04d]\n\
-CENTER %.2f, %.2f, %.2f, NORMAL %.2f, %.2f %.2f\n\
-UL %.2f, %.2f, %.2f, UR %.2f, %.2f, %.2f\n\
-LL %.2f, %.2f, %.2f, LR %.2f, %.2f, %.2f [%04d]",
-                m_procNum,
-                buf.center.x, buf.center.y, buf.center.z,
-                buf.normal.x, buf.normal.y, buf.normal.z,
-                buf.upperLeft.x, buf.upperLeft.y, buf.upperLeft.z,
-                buf.upperRight.x, buf.upperRight.y, buf.upperRight.z,
-                buf.lowerLeft.x, buf.lowerLeft.y, buf.lowerLeft.z,
-                buf.lowerRight.x, buf.lowerRight.y, buf.lowerRight.z,
-                m_procNum);
-*/
+
+            //printf("CENTER %.2f, %.2f, %.2f, NORMAL %.2f, %.2f %.2f\nUL %.2f, %.2f, %.2f, UR %.2f, %.2f, %.2f\nLL %.2f, %.2f, %.2f, LR %.2f, %.2f, %.2f",buf.center.x, buf.center.y, buf.center.z,buf.normal.x, buf.normal.y, buf.normal.z,buf.upperLeft.x, buf.upperLeft.y, buf.upperLeft.z,buf.upperRight.x, buf.upperRight.y, buf.upperRight.z,buf.lowerLeft.x, buf.lowerLeft.y, buf.lowerLeft.z,buf.lowerRight.x, buf.lowerRight.y, buf.lowerRight.z);
+            //printf("PlaneNo: %04d\n",m_procNum);
         }
 
         //publish
@@ -186,12 +181,13 @@ LL %.2f, %.2f, %.2f, LR %.2f, %.2f, %.2f [%04d]",
         if(m_display){
             cv::imshow(CV_FILTERED_WINDOW, pd.getFilterMat());
             cv::imshow(CV_PLANE_WINDOW, pd.getPlaneMat());
-            cv::waitKey(10);
+            cv::waitKey(1);
         }
     }catch(char *e){
         ROS_INFO("ERROR: %s :%s", this->_nodeName, e);
     }
     }//追加トゥアン
+    //ROS_INFO("***************************************CALLBACK END***********************************************\n");
 }
 
 template <class SUB, class PUB>
