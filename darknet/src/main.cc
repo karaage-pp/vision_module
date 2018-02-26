@@ -22,6 +22,7 @@
 #define SUB_TOPIC vision_module::VisionOrder::IMAGE_CAPTURE_INFO.c_str()
 #define PUB_TOPIC vision_module::VisionOrder::OBJECT_DETECTION_INFO.c_str()
 
+
 bool closer(const vision_module::ObjectData &left,
             const vision_module::ObjectData &right){
 
@@ -79,6 +80,7 @@ int main(int argc, char **argv){
     ros::ServiceServer service_stop = n.advertiseService("darknet/stop", &CProcess<vision_module::ImageInfoConstPtr,
              vision_module::ObjectInfo>::stop_call, &proc);
     //追加トゥアン
+
     ros::spin();
     return 0;
 }
@@ -135,8 +137,8 @@ vision_module::Vector operator-(const vision_module::Vector &vec1,
 template <class SUB, class PUB>
 void CProcess<SUB, PUB>::callback(const SUB &msg){
     if (m_server_command){//追加トゥアン
-
-    CvPoint3D32f points[RGBD_IMAGE_SIZE];
+      int image_size = msg->width * msg->height;
+    CvPoint3D32f points[image_size];
     vision_module::ObjectInfo res;
     cv::Mat colorMat = cv::Mat::zeros(msg->height, msg->width, CV_8UC3);
     cv::Mat objectMat = cv::Mat::zeros(msg->height, msg->width, CV_8UC3);
@@ -146,7 +148,7 @@ void CProcess<SUB, PUB>::callback(const SUB &msg){
     try{
 
     //メッセージをOpenCV形式に変換
-    if(convertToCvPC(msg, points, RGBD_IMAGE_SIZE));
+    if(convertToCvPC(msg, points, image_size));
     else throw "convertTo";
     if(convertToMat(msg, colorMat));
     else throw "convertToMat";
@@ -241,7 +243,7 @@ void CProcess<SUB, PUB>::callback(const SUB &msg){
     std::sort(res.objects.begin(), res.objects.end(), closer);
     //publish
     this->_pub.publish(res);
-
+/*
     //処理結果をプリント
 //     printf("-------%s:  NUM OF OBJECTS: %d-------\n",
 //                 this->_nodeName, objCount);
@@ -258,9 +260,9 @@ void CProcess<SUB, PUB>::callback(const SUB &msg){
 //                     data->szwht.x, data->szwht.y, data->szwht.z);
 //     }
 //     printf("\n");
-
+*/
     //処理結果を保存
-    // cv::imwrite(OBJECT_IMAGE, objectMat);
+    cv::imwrite(OBJECT_IMAGE, objectMat);
     //処理結果を表示
     if(m_display){
         cv::imshow(CV_OBJECT_WINDOW, objectMat);
