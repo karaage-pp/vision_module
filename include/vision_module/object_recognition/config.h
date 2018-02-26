@@ -1,6 +1,6 @@
 
-#define WORKSPACE "/home/miyazawa/catkin_ws/src/vision_module/vision_pack"
-#define PYWORKSPACE "/home/miyazawa/catkin_ws/src/vision_module/vision_pack/pyfiles"
+#define WORKSPACE "/home/robocup/unemoto/catkin2/src/vision_module/vision_pack"
+#define PYWORKSPACE "/home/robocup/unemoto/catkin2/src/vision_module/vision_pack/pyfiles"
 
 #define IMAGE_PATH WORKSPACE "/" "image/objRecogImg.jpg"
 #define MODEL WORKSPACE "/" "model/bvlc_reference_caffenet.tf"

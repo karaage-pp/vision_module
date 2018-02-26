@@ -1,6 +1,6 @@
 
-#define WORKSPACE   "/home/miyazawa/catkin_ws/src/vision_module/vision_pack"
-#define PYWORKSPACE "/home/miyazawa/catkin_ws/src/vision_module/vision_pack/pyfiles"
+#define WORKSPACE   "/home/robocup/unemoto/catkin2/src/vision_module/vision_pack"
+#define PYWORKSPACE "/home/robocup/unemoto/catkin2/src/vision_module/vision_pack/pyfiles"
 #define DATA_DIR    "datas"
 #define PICT_DIR    "picts"
 #define MODEL_DIR   "facemodel"
